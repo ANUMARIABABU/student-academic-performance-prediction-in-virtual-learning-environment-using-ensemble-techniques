@@ -1,0 +1,95 @@
+from collections import counter
+from imblearn.over_sampling import smote
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv('merged_data.csv')
+df.head()
+
+x = df[["gender", "highest_education", "imd_band", "age_band", "num_of_prev_attempts", "studied_credits", "disability", "sum_click"]]
+y = df["score"]
+
+from sklearn.preprocessing import LabelEncoder
+import pickle
+
+le = LabelEncoder()
+for i in x:
+        if x[i].dtypes=='object':
+        x[i] = le.fit_transormx[i].astype(str))
+        filename = 'le/{}.sav'.format(i)
+        pickle.dump(le, open(filename,  'wb'))
+       
+       
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.30)
+
+SMOTE = SMOTE()
+
+X_train_SMOTE, y_train_SMOTE = SMOTE.fit_resample(X_train, y_train)
+print("After oversampling: ",Counter(y_train_SMOTE))
+
+X_test_SMOTE, y_test_SMOTE = SMOTE.fit_resample(X_test, y_test)
+print("After oversampling: ",Counter(y_test_SMOTE))
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.neghbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from mlxtend.classifier import StackingCVClassifier
+from xgboost import XGBClassifier
+
+
+clf1 = RandomForestClassifier(random_state=1)
+clf2 = GaussianNB()
+clf3 = SVC()
+clf4 = DecisionTreeClassifier()
+clf5 = XGBClassifier()
+clf6 = KNeighborsClassifier()
+lr = LogisticRegression
+sclf = StackingCVClassifier(Classifiers=[clf1, clf2, clf3, clf4, clf5, clf6,]meta_classifier=lr, store_main_meta_features=True)
+
+label = ['Random Forest', 'Naive Bayes', 'SVM', 'DTtree', 'XGB', 'KNN', 'Stacking Classifier']
+clf_list = [clf1, clf2, clf3, clf4, clf5, clf6, sclf]
+import itertools
+from sklearn.model_selection import cross_val_score
+grid = itertools.product([0,1],repeat=4)
+clf_cv_mean = []
+clf_cv_std = []
+for clf, label, grid in zip(clf_list,label,grid):
+            
+        scores = cross_val_score(clf, x_train, y_train, cv=3, scoring = 'accuracy')
+        print("Accuracy:%.2f(+/-%.2f)[%s]"%(scores.mean(),scores.std(),label))
+        clf_cv_mean.append(scores.mean())
+        clf_cv_std.append(scores.std())
+        clf.fit(x,y)
+        
+plt.figuare()
+(_, caps,_) = plt.errorbar(range(7),clf_cv_mean,yerr=clf_cv_std, c= 'blue', fmt='-o', capsize = 5)
+for cap in caps:
+          cap.set_markeredgewidth(1)
+plt.xticks(range(8), ['RF', 'Naive Bayes', 'SVM', 'DTree', 'XGB', 'KNN', 'Stacking Classifier'])
+plt.ylabel('Accuracy')
+plt.xlabel('Classifier')
+plt.title('Stacking Ensemble')
+plt.show()
+
+from sklearn.metrics import precision_score, recall_score, accuracy_score, confusion_matrix, f1_score
+preds = sclf.predict(x_test)
+print("precision={}".format(precision_score(y_test,preds)))
+print("recall={}".format(recall_score(y_test,preds)))
+print("f1_score={}".format(f1_score(y_test,preds)))
+print("accuracy={}'.format(accuracy_score(y_test,preds)))
+
+
+tn,fp,fn,tp = confusion_matrix(y_test,preds).ravel()
+print("specificity={}".format(tn/(tn+fp)))
+print("sensitivity = {}".format(tp/(tp+fn)))
+print("confusion matrix")
+print(confusion_matrix(y_test,preds))
+
+
+        
+
